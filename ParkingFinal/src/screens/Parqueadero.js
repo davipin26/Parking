@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-// Importamos funciones de la base de datos local
 import { guardarIngresoLocal } from '../database/sqliteManager';
-import * as SQLite from 'expo-sqlite'; // Necesario para leer directamente aquí
+import * as SQLite from 'expo-sqlite'; 
 
 const dbPromise = SQLite.openDatabaseAsync('parqueadero_offline.db');
 
@@ -11,6 +10,7 @@ export default function Parqueadero({ navigation }) {
   const [tipo, setTipo] = useState('Carro');
   const [sincronizando, setSincronizando] = useState(false);
 
+  // 1. Guardar localmente sin internet
   const registrarIngreso = async () => {
     if (!placa) {
       Alert.alert('Atención', 'Por favor ingresa la placa del vehículo.');
@@ -27,11 +27,11 @@ export default function Parqueadero({ navigation }) {
     }
   };
 
+  // 2. Enviar datos a la nube
   const sincronizarDatos = async () => {
     setSincronizando(true);
     try {
       const db = await dbPromise;
-      // 1. Obtener todos los registros locales que no han sido sincronizados (sincronizado = 0)
       const registrosPendientes = await db.getAllAsync('SELECT * FROM ingresos_offline WHERE sincronizado = 0');
       
       if (registrosPendientes.length === 0) {
@@ -40,7 +40,6 @@ export default function Parqueadero({ navigation }) {
         return;
       }
 
-      // 2. Enviar los registros a nuestra API en Render
       const respuesta = await fetch('https://parking-39fc.onrender.com/api/sincronizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,7 +47,6 @@ export default function Parqueadero({ navigation }) {
       });
 
       if (respuesta.ok) {
-        // 3. Si la nube los recibe bien, marcarlos como sincronizados en el celular
         await db.runAsync('UPDATE ingresos_offline SET sincronizado = 1 WHERE sincronizado = 0');
         Alert.alert('Éxito', `${registrosPendientes.length} registros subidos a la nube.`);
       } else {
@@ -62,6 +60,7 @@ export default function Parqueadero({ navigation }) {
     }
   };
 
+  // 3. Cerrar sesión
   const cerrarSesion = () => {
     navigation.replace('Login');
   };
@@ -100,6 +99,21 @@ export default function Parqueadero({ navigation }) {
         )}
       </TouchableOpacity>
 
+      {/* NUEVO BOTÓN: Ver la lista de vehículos adentro */}
+      <TouchableOpacity 
+        style={styles.botonLista} 
+        onPress={() => navigation.navigate('ListaVehiculos')}
+      >
+        <Text style={styles.textoBoton}>Ver Vehículos Adentro</Text>
+      </TouchableOpacity>
+      {/* NUEVO BOTÓN: Ver los pendientes locales */}
+      <TouchableOpacity 
+        style={[styles.botonLista, { backgroundColor: '#6C757D', marginBottom: 15 }]} 
+        onPress={() => navigation.navigate('VehiculosLocales')}
+      >
+        <Text style={styles.textoBoton}>Ver Pendientes (Local)</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.botonSalir} onPress={cerrarSesion}>
         <Text style={styles.textoBotonSalir}>Cerrar Sesión</Text>
       </TouchableOpacity>
@@ -117,7 +131,8 @@ const styles = StyleSheet.create({
   textoNegro: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   textoBlanco: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
   botonGuardar: { backgroundColor: '#28A745', padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 15 },
-  botonSincronizar: { backgroundColor: '#FFC107', padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 30 },
+  botonSincronizar: { backgroundColor: '#FFC107', padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 15 },
+  botonLista: { backgroundColor: '#17A2B8', padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 30 },
   botonSalir: { alignItems: 'center', marginTop: 10 },
   textoBoton: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   textoBotonSalir: { color: '#DC3545', fontSize: 16, fontWeight: 'bold' }

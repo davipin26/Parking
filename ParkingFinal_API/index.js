@@ -2,20 +2,23 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 
+// El vigilante de seguridad traído desde su propia capa (adiós código espagueti 🍝)
+const { verificarSeguridad } = require('./middlewares/seguridad');
+
 const app = express();
 
 // Habilitar CORS y recepción de JSON
 app.use(cors());
 app.use(express.json());
 
-// 1. Conexión a la base de datos SQLite
+// 1. Conexión a la base de datos SQLite (haciendo su magia)
 const db = new sqlite3.Database('./parqueadero_api.sqlite', (err) => {
   if (err) {
     console.error('Error conectando a la base de datos:', err.message);
   } else {
     console.log('Conectado a la base de datos SQLite (Backend API).');
     
-    // Para crear la tabla de usuarios si no existe
+    // Para crear la señora tabla de usuarios si no existe
     db.run(`CREATE TABLE IF NOT EXISTS usuarios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nombre TEXT NOT NULL,
@@ -80,39 +83,13 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// 4. Ruta para Sincronizar Datos Offline (gritos de nutria locaa)
-app.post('/api/sincronizar', (req, res) => {
+// 4. Ruta para Sincronizar Datos Offline (gritos de nutria locaa 🦦) - ¡Protegida!
+app.post('/api/sincronizar', verificarSeguridad, (req, res) => {
   const { registros } = req.body; // Un array con los carros guardados en el celular
   
   if (!registros || registros.length === 0) {
     return res.status(400).json({ mensaje: 'No hay datos para sincronizar' });
   }
-// 5. Ruta para Obtener los Vehículos Adentro
-app.get('/api/vehiculos', (req, res) => {
-  const query = `SELECT * FROM vehiculos WHERE estado = 'Adentro' ORDER BY id DESC`;
-  db.all(query, [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ mensaje: 'Error al consultar vehículos' });
-    }
-    res.status(200).json(rows);
-  });
-});
-
-// 6. Ruta para Dar Salida a un Vehículo
-app.put('/api/salida/:id', (req, res) => {
-  const id = req.params.id;
-  const query = `UPDATE vehiculos SET estado = 'Salió' WHERE id = ?`;
-  
-  db.run(query, [id], function(err) {
-    if (err) {
-      return res.status(500).json({ mensaje: 'Error al registrar salida' });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ mensaje: 'Vehículo no encontrado' });
-    }
-    res.status(200).json({ mensaje: 'Salida registrada correctamente' });
-  });
-});
 
   // Preparamos una sola consulta para insertar todos
   const placeholders = registros.map(() => '(?, ?, ?)').join(',');
@@ -130,9 +107,36 @@ app.put('/api/salida/:id', (req, res) => {
     }
     res.status(200).json({ mensaje: 'Sincronización exitosa', insertados: this.changes });
   });
+}); // <- Aquí ya cerró correctamente la nutria loca
+
+// 5. La poderosísima ruta para Obtener los Vehículos Adentro - ¡Protegida!
+app.get('/api/vehiculos', verificarSeguridad, (req, res) => {
+  const query = `SELECT * FROM vehiculos WHERE estado = 'Adentro' ORDER BY id DESC`;
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ mensaje: 'Error al consultar vehículos' });
+    }
+    res.status(200).json(rows);
+  });
 });
 
-// Configuración del puerto para Render
+// 6. Ruta para Dar Salida a un Vehículo (chao, que te vi 👋) - ¡Protegida!
+app.put('/api/salida/:id', verificarSeguridad, (req, res) => {
+  const id = req.params.id;
+  const query = `UPDATE vehiculos SET estado = 'Salió' WHERE id = ?`;
+  
+  db.run(query, [id], function(err) {
+    if (err) {
+      return res.status(500).json({ mensaje: 'Error al registrar salida' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ mensaje: 'Vehículo no encontrado' });
+    }
+    res.status(200).json({ mensaje: 'Salida registrada correctamente' });
+  });
+});
+
+// Configuración del puerto para Render (que empiece el show)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor API corriendo en el puerto ${PORT}`);
