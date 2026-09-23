@@ -12,19 +12,19 @@ export default function Login({ navigation }) {
     }
 
     try {
-      const respuesta = await fetch('https://parking-39fc.onrender.com', {
+      const respuesta = await fetch('https://parking-39fc.onrender.com/api/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+        'Content-Type': 'application/json',
         },
         body: JSON.stringify({ correo, clave }),
-      });
+    });
 
       const datos = await respuesta.json();
 
       if (respuesta.ok) {
         Alert.alert('Éxito', 'Bienvenido al Parqueadero');
-        // Más adelante aquí pondremos: navigation.navigate('Parqueadero');
+        navigation.replace('Parqueadero');
       } else {
         Alert.alert('Error', datos.mensaje || 'Credenciales incorrectas');
       }

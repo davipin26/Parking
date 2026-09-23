@@ -22,6 +22,14 @@ const db = new sqlite3.Database('./parqueadero_api.sqlite', (err) => {
       correo TEXT UNIQUE NOT NULL,
       clave TEXT NOT NULL
     )`);
+    
+    // Crear la tabla para los vehículos sincronizados
+    db.run(`CREATE TABLE IF NOT EXISTS vehiculos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      placa TEXT NOT NULL,
+      tipo_vehiculo TEXT NOT NULL,
+      hora_ingreso TEXT NOT NULL
+    )`);
   }
 });
 
@@ -68,6 +76,32 @@ app.post('/api/login', (req, res) => {
     } else {
       res.status(401).json({ mensaje: 'Credenciales incorrectas' });
     }
+  });
+});
+
+// 4. Ruta para Sincronizar Datos Offline (gritos de nutria locaa)
+app.post('/api/sincronizar', (req, res) => {
+  const { registros } = req.body; // Un array con los carros guardados en el celular
+  
+  if (!registros || registros.length === 0) {
+    return res.status(400).json({ mensaje: 'No hay datos para sincronizar' });
+  }
+
+  // Preparamos una sola consulta para insertar todos
+  const placeholders = registros.map(() => '(?, ?, ?)').join(',');
+  const valores = [];
+  registros.forEach(reg => {
+    valores.push(reg.placa, reg.tipo_vehiculo, reg.hora_ingreso);
+  });
+
+  const query = `INSERT INTO vehiculos (placa, tipo_vehiculo, hora_ingreso) VALUES ${placeholders}`;
+  
+  db.run(query, valores, function(err) {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ mensaje: 'Error al sincronizar en la base de datos de la nube' });
+    }
+    res.status(200).json({ mensaje: 'Sincronización exitosa', insertados: this.changes });
   });
 });
 
