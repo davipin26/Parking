@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { guardarIngresoLocal } from '../database/sqliteManager';
 import * as SQLite from 'expo-sqlite'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const dbPromise = SQLite.openDatabaseAsync('parqueadero_offline.db');
 
@@ -61,7 +62,10 @@ export default function Parqueadero({ navigation }) {
   };
 
   // 3. Cerrar sesión
-  const cerrarSesion = () => {
+  // 3. Cerrar sesión
+  const cerrarSesion = async () => {
+    // Destruimos la sesión guardada
+    await AsyncStorage.removeItem('usuarioLogueado');
     navigation.replace('Login');
   };
 
