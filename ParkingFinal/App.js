@@ -3,15 +3,14 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { prepararBaseDeDatos } from './src/database/sqliteManager';
 
-// Importamos la pantalla de Login
 import Login from './src/screens/Login';
+import Registro from './src/screens/Registro';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   
   useEffect(() => {
-    // Esto se ejecuta una sola vez al abrir la app para asegurar que la tabla offline exista
     prepararBaseDeDatos();
   }, []);
 
@@ -21,7 +20,12 @@ export default function App() {
         <Stack.Screen 
           name="Login" 
           component={Login} 
-          options={{ title: 'Iniciar Sesión', headerShown: false }} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Registro" 
+          component={Registro} 
+          options={{ title: 'Registro de Usuario' }} 
         />
       </Stack.Navigator>
     </NavigationContainer>
