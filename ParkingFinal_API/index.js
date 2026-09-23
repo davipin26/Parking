@@ -28,7 +28,8 @@ const db = new sqlite3.Database('./parqueadero_api.sqlite', (err) => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       placa TEXT NOT NULL,
       tipo_vehiculo TEXT NOT NULL,
-      hora_ingreso TEXT NOT NULL
+      hora_ingreso TEXT NOT NULL,
+      estado TEXT DEFAULT 'Adentro'
     )`);
   }
 });
@@ -86,6 +87,32 @@ app.post('/api/sincronizar', (req, res) => {
   if (!registros || registros.length === 0) {
     return res.status(400).json({ mensaje: 'No hay datos para sincronizar' });
   }
+// 5. Ruta para Obtener los Vehículos Adentro
+app.get('/api/vehiculos', (req, res) => {
+  const query = `SELECT * FROM vehiculos WHERE estado = 'Adentro' ORDER BY id DESC`;
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ mensaje: 'Error al consultar vehículos' });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// 6. Ruta para Dar Salida a un Vehículo
+app.put('/api/salida/:id', (req, res) => {
+  const id = req.params.id;
+  const query = `UPDATE vehiculos SET estado = 'Salió' WHERE id = ?`;
+  
+  db.run(query, [id], function(err) {
+    if (err) {
+      return res.status(500).json({ mensaje: 'Error al registrar salida' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ mensaje: 'Vehículo no encontrado' });
+    }
+    res.status(200).json({ mensaje: 'Salida registrada correctamente' });
+  });
+});
 
   // Preparamos una sola consulta para insertar todos
   const placeholders = registros.map(() => '(?, ?, ?)').join(',');
